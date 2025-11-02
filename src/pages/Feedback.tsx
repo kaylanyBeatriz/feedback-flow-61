@@ -1,32 +1,48 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { MessageSquare, Send, CheckCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle } from "lucide-react";
+import vinciLogo from "@/assets/vinci-logo.png";
 
 const Feedback = () => {
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
-    satisfaction: "",
-    recommendation: "",
-    experience: "",
-    improvements: "",
-    contact: "",
+    rapidez: 0,
+    apresentacao: 0,
+    tempoEspera: 0,
+    limpeza: 0,
+    experienciaGeral: 0,
+    comoConheceu: "",
+    sugestoes: "",
   });
+
+  const questions = [
+    { id: "rapidez", text: "Como você avalia a rapidez no atendimento?" },
+    { id: "apresentacao", text: "Como você avalia a apresentação do prato/lanche?" },
+    { id: "tempoEspera", text: "Como você avalia o tempo de espera até receber o pedido?" },
+    { id: "limpeza", text: "Como você avalia a limpeza do local?" },
+    { id: "experienciaGeral", text: "Como você avalia a experiência geral na lanchonete?" },
+  ];
+
+  const handleRatingClick = (questionId: string, rating: number) => {
+    setFormData({ ...formData, [questionId]: rating });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.satisfaction || !formData.recommendation) {
-      toast.error("Por favor, responda todas as questões obrigatórias");
+    const allRated = questions.every((q) => {
+      const value = formData[q.id as keyof typeof formData];
+      return typeof value === "number" && value > 0;
+    });
+    
+    if (!allRated) {
+      toast.error("Por favor, responda todas as avaliações");
       return;
     }
 
-    // Aqui será integrado com o backend
     console.log("Feedback enviado:", formData);
     setSubmitted(true);
     toast.success("Feedback enviado com sucesso!");
@@ -34,167 +50,125 @@ const Feedback = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <CardHeader>
-            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-success" />
-            </div>
-            <CardTitle className="text-2xl">Obrigado!</CardTitle>
-            <CardDescription className="text-base">
-              Seu feedback foi enviado com sucesso. Suas opiniões são muito importantes para nós!
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => {
-                setSubmitted(false);
-                setFormData({
-                  satisfaction: "",
-                  recommendation: "",
-                  experience: "",
-                  improvements: "",
-                  contact: "",
-                });
-              }}
-              variant="outline"
-              className="w-full"
-            >
-              Enviar outro feedback
-            </Button>
-          </CardContent>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center p-8 bg-card shadow-xl">
+          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-success" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-card-foreground">Obrigado!</h2>
+          <p className="text-card-foreground/70 mb-6">
+            Seu feedback foi enviado com sucesso. Suas opiniões são muito importantes para nós!
+          </p>
+          <Button 
+            onClick={() => {
+              setSubmitted(false);
+              setFormData({
+                rapidez: 0,
+                apresentacao: 0,
+                tempoEspera: 0,
+                limpeza: 0,
+                experienciaGeral: 0,
+                comoConheceu: "",
+                sugestoes: "",
+              });
+            }}
+            className="w-full bg-[hsl(var(--btn-rating))] hover:bg-[hsl(var(--btn-rating-hover))] text-card-foreground"
+          >
+            Enviar outro feedback
+          </Button>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-primary mb-4 shadow-lg">
-            <MessageSquare className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-4xl font-bold mb-2">Formulário de Feedback</h1>
-          <p className="text-muted-foreground text-lg">
-            Sua opinião é essencial para melhorarmos nossos serviços
-          </p>
+    <div className="min-h-screen bg-background py-8 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header com Logo */}
+        <div className="text-center mb-8">
+          <Button
+            variant="ghost"
+            className="absolute top-4 left-4 text-foreground"
+            onClick={() => window.history.back()}
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </Button>
+          
+          <img 
+            src={vinciLogo} 
+            alt="Vinci Burguer" 
+            className="w-48 h-48 mx-auto mb-4 object-contain"
+          />
+          
+          <h1 className="text-5xl font-bold text-primary mb-2" style={{ fontFamily: 'serif' }}>
+            FeedBack
+          </h1>
         </div>
 
         {/* Form */}
-        <Card className="shadow-xl border-0 bg-card/80 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <CardHeader>
-            <CardTitle>Compartilhe sua experiência</CardTitle>
-            <CardDescription>
-              Este formulário é anônimo e levará apenas alguns minutos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Questão 1 - Satisfação */}
-              <div className="space-y-4">
-                <Label className="text-base font-semibold">
-                  1. Como você avalia sua satisfação geral? *
-                </Label>
-                <RadioGroup
-                  value={formData.satisfaction}
-                  onValueChange={(value) => setFormData({ ...formData, satisfaction: value })}
-                  className="space-y-3"
-                >
-                  {["Muito Satisfeito", "Satisfeito", "Neutro", "Insatisfeito", "Muito Insatisfeito"].map((option) => (
-                    <div key={option} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                      <RadioGroupItem value={option} id={`satisfaction-${option}`} />
-                      <Label htmlFor={`satisfaction-${option}`} className="cursor-pointer flex-1">
-                        {option}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Rating Questions */}
+          {questions.map((question) => (
+            <Card key={question.id} className="p-4 bg-card shadow-md">
+              <p className="text-sm text-card-foreground mb-3 font-medium">
+                {question.text}
+              </p>
+              <div className="flex justify-between gap-2">
+                {[5, 4, 3, 2, 1].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => handleRatingClick(question.id, rating)}
+                    className={`flex-1 h-12 rounded-lg font-bold text-lg transition-all ${
+                      formData[question.id as keyof typeof formData] === rating
+                        ? "bg-[hsl(var(--btn-rating))] text-card-foreground shadow-lg scale-105"
+                        : "bg-[hsl(var(--btn-rating))]/60 text-card-foreground/70 hover:bg-[hsl(var(--btn-rating))]/80"
+                    }`}
+                  >
+                    {rating}
+                  </button>
+                ))}
               </div>
-
-              {/* Questão 2 - Recomendação */}
-              <div className="space-y-4">
-                <Label className="text-base font-semibold">
-                  2. Você recomendaria nosso serviço? *
-                </Label>
-                <RadioGroup
-                  value={formData.recommendation}
-                  onValueChange={(value) => setFormData({ ...formData, recommendation: value })}
-                  className="space-y-3"
-                >
-                  {["Definitivamente Sim", "Provavelmente Sim", "Talvez", "Provavelmente Não", "Definitivamente Não"].map((option) => (
-                    <div key={option} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                      <RadioGroupItem value={option} id={`recommendation-${option}`} />
-                      <Label htmlFor={`recommendation-${option}`} className="cursor-pointer flex-1">
-                        {option}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
+              <div className="flex justify-between mt-2 px-1">
+                <span className="text-xs text-card-foreground/60">Muito satisfeito</span>
+                <span className="text-xs text-card-foreground/60">Insatisfeito</span>
               </div>
+            </Card>
+          ))}
 
-              {/* Questão 3 - Experiência */}
-              <div className="space-y-4">
-                <Label htmlFor="experience" className="text-base font-semibold">
-                  3. Descreva sua experiência com nosso serviço
-                </Label>
-                <Textarea
-                  id="experience"
-                  placeholder="Compartilhe sua experiência conosco..."
-                  value={formData.experience}
-                  onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                  className="min-h-[120px] resize-none"
-                />
-              </div>
+          {/* Open Questions */}
+          <Card className="p-4 bg-card shadow-md">
+            <p className="text-sm text-card-foreground mb-3 font-medium">
+              Como você conheceu a Vinci Burguer?
+            </p>
+            <Textarea
+              placeholder="..."
+              value={formData.comoConheceu}
+              onChange={(e) => setFormData({ ...formData, comoConheceu: e.target.value })}
+              className="min-h-[80px] resize-none bg-[hsl(var(--btn-rating))]/40 border-none text-card-foreground placeholder:text-card-foreground/50"
+            />
+          </Card>
 
-              {/* Questão 4 - Melhorias */}
-              <div className="space-y-4">
-                <Label htmlFor="improvements" className="text-base font-semibold">
-                  4. O que podemos melhorar?
-                </Label>
-                <Textarea
-                  id="improvements"
-                  placeholder="Suas sugestões são muito importantes..."
-                  value={formData.improvements}
-                  onChange={(e) => setFormData({ ...formData, improvements: e.target.value })}
-                  className="min-h-[120px] resize-none"
-                />
-              </div>
+          <Card className="p-4 bg-card shadow-md">
+            <p className="text-sm text-card-foreground mb-3 font-medium">
+              Tem alguma sugestão? Adoraríamos ouvir!
+            </p>
+            <Textarea
+              placeholder="..."
+              value={formData.sugestoes}
+              onChange={(e) => setFormData({ ...formData, sugestoes: e.target.value })}
+              className="min-h-[80px] resize-none bg-[hsl(var(--btn-rating))]/40 border-none text-card-foreground placeholder:text-card-foreground/50"
+            />
+          </Card>
 
-              {/* Questão 5 - Contato (opcional) */}
-              <div className="space-y-4">
-                <Label htmlFor="contact" className="text-base font-semibold">
-                  5. E-mail para contato (opcional)
-                </Label>
-                <Input
-                  id="contact"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={formData.contact}
-                  onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Caso queira que entremos em contato com você
-                </p>
-              </div>
-
-              {/* Submit Button */}
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-primary text-lg h-12 shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <Send className="w-5 h-5 mr-2" />
-                Enviar Feedback
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-muted-foreground">
-          <p>Este formulário é 100% anônimo e seguro</p>
-        </div>
+          {/* Submit Button */}
+          <Button 
+            type="submit" 
+            className="w-full bg-[#4682B4] hover:bg-[#3d6fa0] text-white text-lg h-12 rounded-lg shadow-lg font-medium"
+          >
+            Enviar Feedback
+          </Button>
+        </form>
       </div>
     </div>
   );
