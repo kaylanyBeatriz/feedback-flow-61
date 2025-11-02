@@ -97,7 +97,7 @@ const Feedback = () => {
           <img 
             src={vinciLogo} 
             alt="Vinci Burguer" 
-            className="w-48 h-48 mx-auto mb-4 object-contain"
+            className="w-72 h-72 mx-auto mb-6 object-contain"
           />
           
           <h1 className="text-5xl font-bold text-primary mb-2" style={{ fontFamily: 'serif' }}>
