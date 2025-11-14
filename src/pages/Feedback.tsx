@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import vinciLogo from "@/assets/vinci-logo.png";
+import { supabase } from "@/lib/supabase";
 
 const Feedback = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -18,32 +19,123 @@ const Feedback = () => {
     sugestoes: "",
   });
 
-  const questions = [
-    { id: "rapidez", text: "Como você avalia a rapidez no atendimento?" },
-    { id: "apresentacao", text: "Como você avalia a apresentação do prato/lanche?" },
-    { id: "tempoEspera", text: "Como você avalia o tempo de espera até receber o pedido?" },
-    { id: "limpeza", text: "Como você avalia a limpeza do local?" },
-    { id: "experienciaGeral", text: "Como você avalia a experiência geral na lanchonete?" },
-  ];
-
-  const handleRatingClick = (questionId: string, rating: number) => {
-    setFormData({ ...formData, [questionId]: rating });
+  type FeedbackForm = { id: number; title: string | null };
+  type DBQuestion = {
+    id: number;
+    question_text: string | null;
+    question_type?: number | null;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [feedbacks, setFeedbacks] = useState<FeedbackForm[]>([]);
+  const [selectedFeedbackId, setSelectedFeedbackId] = useState<number | null>(null);
+  const [dbQuestions, setDbQuestions] = useState<DBQuestion[]>([]);
+  const [answers, setAnswers] = useState<Record<number, { satisfaction?: number; answer_text?: string }>>({});
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const loadFeedbacks = async () => {
+      const { data, error } = await supabase
+        .from("feedbacks")
+        .select("id, title")
+        .order("id", { ascending: false });
+
+      if (error) {
+        toast.error("Erro ao carregar formulários");
+        return;
+      }
+      setFeedbacks(data || []);
+      if (data && data.length > 0) {
+        setSelectedFeedbackId(data[0].id);
+      }
+    };
+    loadFeedbacks();
+  }, []);
+
+  useEffect(() => {
+    const loadQuestions = async (formId: number) => {
+      setLoadingQuestions(true);
+      const { data, error } = await supabase
+        .from("questions")
+        .select("id, question_text, question_type")
+        .eq("feedback_id", formId)
+        .order("id", { ascending: true });
+
+      console.log("formId:", formId);
+
+      if (error) {
+        toast.error("Erro ao carregar perguntas");
+        setDbQuestions([]);
+      } else {
+        setDbQuestions(data || []);
+        setAnswers({});
+      }
+      setLoadingQuestions(false);
+    };
+
+    if (selectedFeedbackId) {
+      loadQuestions(selectedFeedbackId);
+    } else {
+      setDbQuestions([]);
+      setAnswers({});
+    }
+  }, [selectedFeedbackId]);
+
+  const handleRatingClick = (questionId: number, rating: number) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: { ...(prev[questionId] || {}), satisfaction: rating },
+    }));
+  };
+
+  const handleTextAnswer = (questionId: number, text: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: { ...(prev[questionId] || {}), answer_text: text },
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const allRated = questions.every((q) => {
-      const value = formData[q.id as keyof typeof formData];
-      return typeof value === "number" && value > 0;
-    });
-    
-    if (!allRated) {
-      toast.error("Por favor, responda todas as avaliações");
+
+    if (!selectedFeedbackId) {
+      toast.error("Selecione um formulário");
       return;
     }
 
-    console.log("Feedback enviado:", formData);
+    const missing = dbQuestions.find((q) => {
+      const type = (q.question_type ?? 0) as number;
+      const a = answers[q.id] || {};
+      if (type === 1) {
+        return !(typeof a.satisfaction === "number" && a.satisfaction > 0);
+      }
+      return !(typeof a.answer_text === "string" && a.answer_text.trim().length > 0);
+    });
+
+    if (missing) {
+      toast.error("Por favor, responda todas as perguntas");
+      return;
+    }
+
+    setSubmitting(true);
+    const rows = dbQuestions.map((q) => {
+      const type = (q.question_type ?? 0) as number;
+      const a = answers[q.id] || {};
+      return {
+        question_id: q.id,
+        satisfaction: type === 1 ? (a.satisfaction ?? null) : null,
+        answer_text: type === 0 ? (a.answer_text ?? null) : null,
+      };
+    });
+
+    const { error } = await supabase.from("answers").insert(rows);
+    setSubmitting(false);
+
+    if (error) {
+      toast.error("Erro ao enviar feedback");
+      return;
+    }
+
     setSubmitted(true);
     toast.success("Feedback enviado com sucesso!");
   };
@@ -84,7 +176,6 @@ const Feedback = () => {
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        {/* Header com Logo */}
         <div className="text-center mb-8">
           <Button
             variant="ghost"
@@ -105,69 +196,88 @@ const Feedback = () => {
           </h1>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Rating Questions */}
-          {questions.map((question) => (
-            <Card key={question.id} className="p-4 bg-card shadow-md">
-              <p className="text-sm text-card-foreground mb-3 font-medium">
-                {question.text}
-              </p>
-              <div className="flex justify-between gap-2">
-                {[5, 4, 3, 2, 1].map((rating) => (
-                  <button
-                    key={rating}
-                    type="button"
-                    onClick={() => handleRatingClick(question.id, rating)}
-                    className={`flex-1 h-12 rounded-lg font-bold text-lg transition-all ${
-                      formData[question.id as keyof typeof formData] === rating
-                        ? "bg-[hsl(var(--btn-rating))] text-card-foreground shadow-lg scale-105"
-                        : "bg-[hsl(var(--btn-rating))]/60 text-card-foreground/70 hover:bg-[hsl(var(--btn-rating))]/80"
-                    }`}
-                  >
-                    {rating}
-                  </button>
-                ))}
-              </div>
-              <div className="flex justify-between mt-2 px-1">
-                <span className="text-xs text-card-foreground/60">Muito satisfeito</span>
-                <span className="text-xs text-card-foreground/60">Insatisfeito</span>
-              </div>
-            </Card>
-          ))}
-
-          {/* Open Questions */}
-          <Card className="p-4 bg-card shadow-md">
-            <p className="text-sm text-card-foreground mb-3 font-medium">
-              Como você conheceu a Vinci Burguer?
-            </p>
-            <Textarea
-              placeholder="..."
-              value={formData.comoConheceu}
-              onChange={(e) => setFormData({ ...formData, comoConheceu: e.target.value })}
-              className="min-h-[80px] resize-none bg-[hsl(var(--btn-rating))]/40 border-none text-card-foreground placeholder:text-card-foreground/50"
-            />
-          </Card>
-
-          <Card className="p-4 bg-card shadow-md">
-            <p className="text-sm text-card-foreground mb-3 font-medium">
-              Tem alguma sugestão? Adoraríamos ouvir!
-            </p>
-            <Textarea
-              placeholder="..."
-              value={formData.sugestoes}
-              onChange={(e) => setFormData({ ...formData, sugestoes: e.target.value })}
-              className="min-h-[80px] resize-none bg-[hsl(var(--btn-rating))]/40 border-none text-card-foreground placeholder:text-card-foreground/50"
-            />
-          </Card>
-
-          {/* Submit Button */}
-          <Button 
-            type="submit" 
-            className="w-full bg-[#E0A938] hover:bg-[#c99430] text-white text-lg h-12 rounded-lg shadow-lg font-medium"
+        <Card className="p-4 bg-card shadow-md mb-6">
+          <p className="text-sm text-card-foreground mb-2 font-medium">Selecione o formulário</p>
+          <select
+            className="w-full h-10 rounded-md bg-[hsl(var(--btn-rating))]/40 border-none text-card-foreground px-3"
+            value={selectedFeedbackId ?? ""}
+            onChange={(e) => setSelectedFeedbackId(e.target.value ? Number(e.target.value) : null)}
           >
-            Enviar Feedback
-          </Button>
+            {feedbacks.length === 0 && <option value="">Carregando...</option>}
+            {feedbacks.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.title || `Formulário #${f.id}`}
+              </option>
+            ))}
+          </select>
+        </Card>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {loadingQuestions && (
+            <Card className="p-4 bg-card shadow-md">
+              <p className="text-sm text-card-foreground">Carregando perguntas...</p>
+            </Card>
+          )}
+
+          {!loadingQuestions && dbQuestions.length === 0 && (
+            <Card className="p-4 bg-card shadow-md">
+              <p className="text-sm text-card-foreground">Nenhuma pergunta encontrada para este formulário.</p>
+            </Card>
+          )}
+
+          {!loadingQuestions &&
+            dbQuestions.map((q) => {
+              const type = (q.question_type ?? 0) as number;
+              return (
+                <Card key={q.id} className="p-4 bg-card shadow-md">
+                  <p className="text-sm text-card-foreground mb-3 font-medium">
+                    {q.question_text || `Pergunta #${q.id}`}
+                  </p>
+
+                  {type === 1 ? (
+                    <>
+                      <div className="flex justify-between gap-2">
+                        {[5, 4, 3, 2, 1].map((rating) => (
+                          <button
+                            key={rating}
+                            type="button"
+                            onClick={() => handleRatingClick(q.id, rating)}
+                            className={`flex-1 h-12 rounded-lg font-bold text-lg transition-all ${
+                              answers[q.id]?.satisfaction === rating
+                                ? "bg-[hsl(var(--btn-rating))] text-card-foreground shadow-lg scale-105"
+                                : "bg-[hsl(var(--btn-rating))]/60 text-card-foreground/70 hover:bg-[hsl(var(--btn-rating))]/80"
+                            }`}
+                          >
+                            {rating}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex justify-between mt-2 px-1">
+                        <span className="text-xs text-card-foreground/60">Muito satisfeito</span>
+                        <span className="text-xs text-card-foreground/60">Insatisfeito</span>
+                      </div>
+                    </>
+                  ) : (
+                    <Textarea
+                      placeholder="Digite sua resposta..."
+                      value={answers[q.id]?.answer_text ?? ""}
+                      onChange={(e) => handleTextAnswer(q.id, e.target.value)}
+                      className="min-h-[80px] resize-none bg-[hsl(var(--btn-rating))]/40 border-none text-card-foreground placeholder:text-card-foreground/50"
+                    />
+                  )}
+                </Card>
+              );
+            })}
+
+          {dbQuestions.length > 0 && (
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-[#E0A938] hover:bg-[#c99430] text-white text-lg h-12 rounded-lg shadow-lg font-medium disabled:opacity-60"
+            >
+              {submitting ? "Enviando..." : "Enviar Feedback"}
+            </Button>
+          )}
         </form>
       </div>
     </div>
