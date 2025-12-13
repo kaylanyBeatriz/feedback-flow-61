@@ -3,12 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import vinciLogo from "@/assets/vinci-logo.png";
 import { supabase } from "@/lib/supabase";
 
 const Feedback = () => {
-  const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     rapidez: 0,
     apresentacao: 0,
@@ -32,6 +31,7 @@ const Feedback = () => {
   const [answers, setAnswers] = useState<Record<number, { satisfaction?: number; answer_text?: string }>>({});
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submittedNotice, setSubmittedNotice] = useState(false);
 
   useEffect(() => {
     const loadFeedbacks = async () => {
@@ -136,45 +136,25 @@ const Feedback = () => {
       return;
     }
 
-    setSubmitted(true);
     toast.success("Feedback enviado com sucesso!");
+    setSubmittedNotice(true);
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1500);
   };
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center p-8 bg-card shadow-xl">
-          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-            <CheckCircle className="w-8 h-8 text-success" />
-          </div>
-          <h2 className="text-2xl font-bold mb-2 text-card-foreground">Obrigado!</h2>
-          <p className="text-card-foreground/70 mb-6">
-            Seu feedback foi enviado com sucesso. Suas opiniões são muito importantes para nós!
-          </p>
-          <Button 
-            onClick={() => {
-              setSubmitted(false);
-              setFormData({
-                rapidez: 0,
-                apresentacao: 0,
-                tempoEspera: 0,
-                limpeza: 0,
-                experienciaGeral: 0,
-                comoConheceu: "",
-                sugestoes: "",
-              });
-            }}
-            className="w-full bg-[hsl(var(--btn-rating))] hover:bg-[hsl(var(--btn-rating-hover))] text-card-foreground"
-          >
-            Enviar outro feedback
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
+      {/* Aviso canto inferior direito */}
+      {submittedNotice && (
+        <div className="fixed bottom-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-2 rounded-lg shadow-lg border bg-card px-4 py-3 flex items-start gap-3 w-72">
+          <div className="flex-1">
+            <p className="text-sm font-medium">Feedback enviado!</p>
+            <p className="text-xs text-muted-foreground">Redirecionando para página inicial...</p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <Button
@@ -184,24 +164,24 @@ const Feedback = () => {
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          
-          <img 
-            src={vinciLogo} 
-            alt="Vinci Burguer" 
-            className="w-80 h-80 mx-auto mb-6 object-contain"
+
+          <img
+            src={vinciLogo}
+            alt="Vinci Burguer"
+            className="w-[500px] h-[500px] mx-auto mb-6 object-contain"
           />
-          
-          <h1 className="text-5xl font-bold text-primary mb-2" style={{ fontFamily: 'serif' }}>
-            FeedBack
+
+          <h1 className="text-5xl font-bold mb-2" style={{ fontFamily: 'serif' }}>
+            Feedback Anônimo
           </h1>
         </div>
 
         <Card className="p-4 bg-card shadow-md mb-6">
-          <p className="text-sm text-card-foreground mb-2 font-medium">Selecione o formulário</p>
           <select
             className="w-full h-10 rounded-md bg-[hsl(var(--btn-rating))]/40 border-none text-card-foreground px-3"
             value={selectedFeedbackId ?? ""}
             onChange={(e) => setSelectedFeedbackId(e.target.value ? Number(e.target.value) : null)}
+            disabled
           >
             {feedbacks.length === 0 && <option value="">Carregando...</option>}
             {feedbacks.map((f) => (
@@ -237,24 +217,23 @@ const Feedback = () => {
                   {type === 1 ? (
                     <>
                       <div className="flex justify-between gap-2">
-                        {[5, 4, 3, 2, 1].map((rating) => (
+                        {[1, 2, 3, 4, 5].map((rating) => (
                           <button
                             key={rating}
                             type="button"
                             onClick={() => handleRatingClick(q.id, rating)}
-                            className={`flex-1 h-12 rounded-lg font-bold text-lg transition-all ${
-                              answers[q.id]?.satisfaction === rating
+                            className={`flex-1 h-12 rounded-lg font-bold text-lg transition-all ${answers[q.id]?.satisfaction === rating
                                 ? "bg-[hsl(var(--btn-rating))] text-card-foreground shadow-lg scale-105"
                                 : "bg-[hsl(var(--btn-rating))]/60 text-card-foreground/70 hover:bg-[hsl(var(--btn-rating))]/80"
-                            }`}
+                              }`}
                           >
                             {rating}
                           </button>
                         ))}
                       </div>
                       <div className="flex justify-between mt-2 px-1">
-                        <span className="text-xs text-card-foreground/60">Muito satisfeito</span>
-                        <span className="text-xs text-card-foreground/60">Insatisfeito</span>
+                        <span className="text-[0.90rem] text-card-foreground/60">Insatisfeito</span>
+                        <span className="text-[0.90rem] text-card-foreground/60">Muito satisfeito</span>
                       </div>
                     </>
                   ) : (
@@ -273,9 +252,12 @@ const Feedback = () => {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[#E0A938] hover:bg-[#c99430] text-white text-lg h-12 rounded-lg shadow-lg font-medium disabled:opacity-60"
+              className="w-full bg-[hsl(45_100%_58%)] hover:bg-[hsl(45_100%_50%)] text-[#ffffff] text-lg h-12 rounded-lg shadow-lg font-medium disabled:opacity-60"
             >
-              {submitting ? "Enviando..." : "Enviar Feedback"}
+              {submitting
+                ? "Enviando..."
+                : <span className="font-bold">Enviar Feedback</span>
+              }
             </Button>
           )}
         </form>

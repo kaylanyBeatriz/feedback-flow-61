@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, BarChart, Shield, Zap } from "lucide-react";
 
 const Index = () => {
@@ -30,9 +29,24 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted/20 to-background">
+      {/* Header */}
+      <header className="w-full bg-card shadow-md fixed top-0 z-50"
+            style={{
+            backgroundColor: "#CFCFCF", // Cor inicial do header
+          }}>
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="text-lg font-bold text-primary">Feedback</span>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4">
+      <section className="relative overflow-hidden py-20 px-4 mt-16 flex-grow">
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-primary mb-6 shadow-xl">
@@ -69,69 +83,13 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Por que escolher nossa plataforma?</h2>
-            <p className="text-lg text-muted-foreground">
-              Recursos poderosos para transformar feedback em crescimento
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <Card 
-                key={index}
-                className="shadow-lg border-0 bg-gradient-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-              >
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base">
-                    {feature.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <Card className="shadow-2xl border-0 bg-gradient-primary overflow-hidden">
-            <CardContent className="p-12 text-center text-primary-foreground">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Pronto para começar?
-              </h2>
-              <p className="text-lg mb-8 opacity-90">
-                Comece a coletar feedbacks valiosos hoje mesmo
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  size="lg"
-                  variant="secondary"
-                  onClick={() => navigate("/feedback")}
-                  className="text-lg px-8"
-                >
-                  Enviar Feedback Agora
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
       {/* Footer */}
-      <footer className="border-t py-8 px-4 mt-20">
+      <footer className="w-full bg-card border-t py-4 mt-auto"
+          style={{
+            backgroundColor: "#CFCFCF", // Cor inicial do header
+          }}>
         <div className="max-w-6xl mx-auto text-center text-muted-foreground">
-          <p>&copy; 2024 Plataforma de Feedback. Todos os direitos reservados.</p>
+          <p>&copy; 2025 Plataforma de Feedback. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

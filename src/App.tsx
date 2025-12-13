@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import QuestionsEditor from "./pages/QuestionsEditor";
+import DashboardSatisfaction from "./pages/DashboardSatisfação";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/questions-editor" element={<QuestionsEditor />} />
+          <Route path="/dashboard-satisfacao" element={<DashboardSatisfaction />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

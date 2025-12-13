@@ -40,6 +40,7 @@ const QuestionsEditor = () => {
     const { data, error } = await supabase
       .from("questions")
       .select("id, question_text, question_type")
+    
       .eq("feedback_id", formId)
       .order("id", { ascending: true });
 
@@ -112,22 +113,6 @@ const QuestionsEditor = () => {
       }
       updateLocal(idx, { id: data?.id, isNew: false });
       toast.success("Pergunta criada");
-    } else {
-      const { error } = await supabase
-        .from("questions")
-        .update({
-          question_text: q.question_text.trim(),
-          question_type: q.question_type,
-        })
-        .eq("id", q.id!);
-
-      updateLocal(idx, { saving: false });
-
-      if (error) {
-        toast.error("Erro ao salvar pergunta");
-        return;
-      }
-      toast.success("Pergunta atualizada");
     }
   };
 
@@ -239,64 +224,108 @@ const QuestionsEditor = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Texto da pergunta</label>
-                    <input
-                      type="text"
-                      value={q.question_text}
-                      onChange={(e) => updateLocal(idx, { question_text: e.target.value })}
-                      className="w-full h-10 rounded-md bg-muted/40 border border-border px-3"
-                      placeholder="Digite o texto da pergunta"
-                    />
-                  </div>
+                  {q.isNew ? (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Texto da pergunta</label>
+                        <input
+                          type="text"
+                          value={q.question_text}
+                          onChange={(e) => updateLocal(idx, { question_text: e.target.value })}
+                          className="w-full h-10 rounded-md bg-muted/40 border border-border px-3"
+                          placeholder="Digite o texto da pergunta"
+                        />
+                      </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Tipo</label>
-                    <select
-                      value={q.question_type}
-                      onChange={(e) => updateLocal(idx, { question_type: Number(e.target.value) })}
-                      className="w-full h-10 rounded-md bg-muted/40 border border-border px-3"
-                    >
-                      <option value={1}>Escala (1 a 5)</option>
-                      <option value={0}>Texto (resposta aberta)</option>
-                    </select>
-                  </div>
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Tipo</label>
+                        <select
+                          value={q.question_type}
+                          onChange={(e) => updateLocal(idx, { question_type: Number(e.target.value) })}
+                          className="w-full h-10 rounded-md bg-muted/40 border border-border px-3"
+                        >
+                          <option value={1}>Escala (1 a 5)</option>
+                          <option value={0}>Texto (resposta aberta)</option>
+                        </select>
+                      </div>
 
-                  <div className="pt-2">
-                    {q.question_type === 1 ? (
-                      <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <div
-                            key={n}
-                            className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground"
-                            title="Pré-visualização"
-                          >
-                            {n}
+                      <div className="pt-2">
+                        {q.question_type === 1 ? (
+                          <div className="flex gap-2">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <div
+                                key={n}
+                                className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground"
+                                title="Pré-visualização"
+                              >
+                                {n}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        ) : (
+                          <div className="h-20 rounded-md bg-muted flex items-center px-3 text-sm text-muted-foreground">
+                            Pré-visualização do campo de texto
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="h-20 rounded-md bg-muted flex items-center px-3 text-sm text-muted-foreground">
-                        Pré-visualização do campo de texto
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => saveQuestion(idx)}
-                      disabled={q.saving}
-                      className="disabled:opacity-60"
-                    >
-                      {q.saving ? "Salvando..." : "Salvar"}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => deleteQuestion(idx)}
-                    >
-                      Excluir
-                    </Button>
-                  </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => saveQuestion(idx)}
+                          disabled={q.saving}
+                          className="disabled:opacity-60"
+                        >
+                          {q.saving ? "Salvando..." : "Salvar"}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => deleteQuestion(idx)}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Texto:</span> {q.question_text}
+                        </p>
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Tipo:</span>{" "}
+                          {q.question_type === 1 ? "Escala (1 a 5)" : "Texto (resposta aberta)"}
+                        </p>
+                      </div>
+
+                      <div className="pt-2">
+                        {q.question_type === 1 ? (
+                          <div className="flex gap-2">
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <div
+                                key={n}
+                                className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground"
+                              >
+                                {n}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="h-20 rounded-md bg-muted flex items-center px-3 text-sm text-muted-foreground">
+                            Pré-visualização do campo de texto
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="destructive"
+                          onClick={() => deleteQuestion(idx)}
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             ))}
