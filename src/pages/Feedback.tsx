@@ -31,7 +31,7 @@ const Feedback = () => {
   const [answers, setAnswers] = useState<Record<number, { satisfaction?: number; answer_text?: string }>>({});
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submittedNotice, setSubmittedNotice] = useState(false);
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
 
   useEffect(() => {
     const loadFeedbacks = async () => {
@@ -106,14 +106,15 @@ const Feedback = () => {
     const missing = dbQuestions.find((q) => {
       const type = (q.question_type ?? 0) as number;
       const a = answers[q.id] || {};
+      // Apenas perguntas de avaliação (type === 1) são obrigatórias
       if (type === 1) {
         return !(typeof a.satisfaction === "number" && a.satisfaction > 0);
       }
-      return !(typeof a.answer_text === "string" && a.answer_text.trim().length > 0);
+      return false;
     });
 
     if (missing) {
-      toast.error("Por favor, responda todas as perguntas");
+      toast.error("Por favor, responda todas as perguntas de avaliação");
       return;
     }
 
@@ -136,24 +137,31 @@ const Feedback = () => {
       return;
     }
 
-    toast.success("Feedback enviado com sucesso!");
-    setSubmittedNotice(true);
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 1500);
+    setShowSuccessScreen(true);
   };
+
+  if (showSuccessScreen) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="w-20 h-20 mx-auto bg-green-500 rounded-full flex items-center justify-center">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-4xl font-bold text-foreground" style={{ fontFamily: 'serif' }}>
+            Enviado com Sucesso!
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Obrigado pelo seu feedback!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
-      {/* Aviso canto inferior direito */}
-      {submittedNotice && (
-        <div className="fixed bottom-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-2 rounded-lg shadow-lg border bg-card px-4 py-3 flex items-start gap-3 w-72">
-          <div className="flex-1">
-            <p className="text-sm font-medium">Feedback enviado!</p>
-            <p className="text-xs text-muted-foreground">Redirecionando para página inicial...</p>
-          </div>
-        </div>
-      )}
 
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">

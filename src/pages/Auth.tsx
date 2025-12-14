@@ -56,14 +56,26 @@ const Auth = () => {
           email,
           password,
           options: {
-            // Ajuste a URL do site nas configurações do Supabase (Auth -> URL)
-            emailRedirectTo: `${window.location.origin}`,
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: {
+              notify_admin: "vinciburguer.oficial@gmail.com",
+              requested_email: email,
+            }
           },
         });
         if (error) throw error;
 
-        if (data.user && !data.session) {
-          toast.info("Cadastro criado. Verifique seu e-mail para confirmar a conta.");
+        if (data.user) {
+          // Salvar solicitação pendente
+          await supabase.from('pending_users').insert({
+            user_id: data.user.id,
+            email: email,
+            admin_email: "vinciburguer.oficial@gmail.com",
+            status: 'pending',
+            created_at: new Date().toISOString()
+          });
+
+          toast.info("Cadastro criado. Verificação enviada para vinciburguer.oficial@gmail.com");
           setMode("login");
         }
       }
